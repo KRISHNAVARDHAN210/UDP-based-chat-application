@@ -1,3 +1,24 @@
+"""
+Secure UDP Chat Client with GUI (PySide6).
+
+This client:
+- Uses RSA to exchange a symmetric AES key with the server.
+- Sends and receives AES-encrypted, HMAC-authenticated messages.
+- Displays a Qt-based GUI for interactive chatting.
+
+Modules used:
+- PySide6 for GUI
+- socket + threading for communication
+- crypto_utls for encryption primitives
+"""
+
+__all__ = [
+    "generate_hmac",
+    "verify_hmac",
+    "reliable_send",
+    "ChatClient",
+    "main"
+]
 import socket
 import threading
 import base64
@@ -28,15 +49,47 @@ private_key = None
 
 # Generate HMAC for a message using the given key
 def generate_hmac(key, message):
+    """
+    Generate an HMAC using SHA-256.
+
+    Args:
+        key (bytes): The AES key used for HMAC.
+        message (bytes): The message to authenticate.
+
+    Returns:
+        str: Hex-encoded HMAC string.
+    """
     return hmac.new(key, message, hashlib.sha256).hexdigest()
 
 # Verify the HMAC of a received message
 def verify_hmac(key, message, received_hmac):
+    """
+    Verify that an HMAC matches the expected value.
+
+    Args:
+        key (bytes): The shared AES key.
+        message (bytes): The original message.
+        received_hmac (str): The received HMAC.
+
+    Returns:
+        bool: True if HMAC matches, else False.
+    """
     expected_hmac = hmac.new(key, message, hashlib.sha256).hexdigest()
     return hmac.compare_digest(expected_hmac, received_hmac)
 
 # Attempt to send a UDP packet with retries for reliability
 def reliable_send(sock, data, address):
+    """
+    Send a message over UDP with retry attempts.
+
+    Args:
+        sock (socket.socket): The UDP socket.
+        data (bytes): The message to send.
+        address (tuple): The server's (IP, port) address.
+
+    Returns:
+        bool: True if successful, False if retries exceeded.
+    """
     for attempt in range(1, MAX_RETRIES + 1):
         try:
             sock.sendto(data, address)
@@ -48,6 +101,9 @@ def reliable_send(sock, data, address):
 
 # Main chat client class with GUI
 class ChatClient(QWidget):
+    """
+    GUI-based UDP Chat Client that handles encryption, messaging, and GUI updates.
+    """
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Secure UDP Chat")
@@ -62,6 +118,9 @@ class ChatClient(QWidget):
 
     # Set up the UI components
     def init_ui(self):
+        """
+        Initialize the GUI layout and widgets.
+        """
         layout = QVBoxLayout()
 
         self.status_label = QLabel("Enter your username to begin.")
@@ -91,6 +150,9 @@ class ChatClient(QWidget):
 
     # Generate RSA keypair and send public key to server
     def initialize_crypto(self):
+        """
+        Generate RSA keys and initiate AES key exchange with the server.
+        """
         global private_key
         private_key, public_key = generate_rsa_keypair()
         reliable_send(self.sock, base64.b64encode(public_key), (SERVER_IP, SERVER_PORT))
@@ -98,10 +160,19 @@ class ChatClient(QWidget):
 
     # Append a message to the chat window
     def append_chat(self, message):
+        """
+        Append a message to the chat display.
+
+        Args:
+            message (str): The message to show.
+        """
         self.chat_display.append(message)
 
     # Send a message using AES encryption and HMAC
     def send_message(self):
+        """
+        Encrypt and send a chat message to the server.
+        """
         global aes_key
         msg = self.input_field.text()
         if not msg:
@@ -124,10 +195,16 @@ class ChatClient(QWidget):
 
     # Start a background thread to listen for incoming messages
     def start_receiver_thread(self):
+        """
+        Start a background thread to listen for messages.
+        """
         threading.Thread(target=self.receive_messages, daemon=True).start()
 
     # Receive and decrypt messages from the server
     def receive_messages(self):
+        """
+        Continuously receive, decrypt, and verify messages from the server.
+        """
         global aes_key
         while True:
             try:
@@ -159,6 +236,9 @@ class ChatClient(QWidget):
 
 # Launch the application
 def main():
+    """
+    Launch the Qt application and run the chat client.
+    """
     app = QApplication([])
     window = ChatClient()
     window.show()

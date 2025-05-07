@@ -1,3 +1,23 @@
+"""
+Secure UDP Chat Server.
+
+This server performs:
+- RSA key registration from clients.
+- Per-client AES key generation and exchange.
+- AES-CBC encryption for messages.
+- HMAC-SHA256 verification for authenticity.
+- End-to-end encrypted message broadcasting.
+
+See: `crypto_utls.py` for cryptographic primitives.
+"""
+
+__all__ = [
+    "generate_hmac",
+    "verify_hmac",
+    "handle_client",
+    "broadcast_encrypted",
+    "main"
+]
 import socket
 import base64
 import hmac
@@ -21,15 +41,42 @@ client_hmac_keys = {}  # Maps client address to HMAC key (same as AES key)
 
 # HMAC generation using SHA-256
 def generate_hmac(key, message):
+    """
+    Generate HMAC using SHA-256.
+
+    Args:
+        key (bytes): HMAC key (typically the AES key).
+        message (bytes): Message to authenticate.
+
+    Returns:
+        str: Hex-encoded HMAC digest.
+    """
     return hmac.new(key, message, hashlib.sha256).hexdigest()
 
 # HMAC verification using constant-time comparison
 def verify_hmac(key, message, received_hmac):
+    """
+    Verify HMAC using constant-time comparison.
+
+    Args:
+        key (bytes): HMAC key.
+        message (bytes): Original message.
+        received_hmac (str): Received HMAC to validate.
+
+    Returns:
+        bool: True if the HMAC is valid, else False.
+    """
     expected_hmac = hmac.new(key, message, hashlib.sha256).hexdigest()
     return hmac.compare_digest(expected_hmac, received_hmac)
 
 # Main loop to handle incoming packets from clients
 def handle_client(sock):
+    """
+    Handle incoming messages from clients.
+
+    Args:
+        sock (socket.socket): The UDP socket bound to the server.
+    """
     while True:
         try:
             data, addr = sock.recvfrom(BUFFER_SIZE)
@@ -96,6 +143,14 @@ def handle_client(sock):
 
 # Broadcast a message securely to all other clients
 def broadcast_encrypted(sock, sender_addr, message):
+    """
+    Broadcast a message securely to all clients except the sender.
+
+    Args:
+        sock (socket.socket): UDP server socket.
+        sender_addr (tuple): Address of sender.
+        message (bytes): Decrypted plaintext message.
+    """
     for addr, aes_key in clients.items():
         if addr != sender_addr:
             try:
@@ -116,11 +171,13 @@ def broadcast_encrypted(sock, sender_addr, message):
 
 # Start the UDP server
 def main():
+    """
+    Start the UDP server and listen for clients.
+    """
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.bind((SERVER_IP, SERVER_PORT))
     print(f"[Server started on {SERVER_IP}:{SERVER_PORT}]")
     handle_client(sock)
 
-# Entry point
 if __name__ == "__main__":
     main()
