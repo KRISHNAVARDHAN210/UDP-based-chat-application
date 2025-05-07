@@ -8,19 +8,21 @@
 This project implements a **UDP-based secured chat application** using **RSA**, **AES**, and **HMAC** for encryption and authentication. The goal of this homework is to design a secure communication system with robust cryptographic protocols.
 
 ## Files
-The zip folder contains the following files:
+The repo contains the following files:
 
 1. **client.py**: The main script to start the client application.
 2. **server.py**: The main script to start the server application.
 3. **crypto_utls.py**: Contains six different cryptographic utilities used for encryption and authentication.
 4. **README.md**: This file.
 5. **hw1report_132711056.pdf**: The report file.
+6. **docs**: Contains required files used for generating document from sphinx
 
 ## Requirements
 Install the necessary Python packages:
 
 ```bash
 pip install PySide6 pycryptodome
+pip install sphinx
 
 HOW TO RUN:
 
